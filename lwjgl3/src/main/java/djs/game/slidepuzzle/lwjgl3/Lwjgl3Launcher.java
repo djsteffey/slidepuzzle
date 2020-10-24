@@ -13,7 +13,7 @@ public class Lwjgl3Launcher {
 		configuration.setWindowedMode(720 / 2, 1280 / 2);
 		configuration.setResizable(false);
 		configuration.setInitialBackgroundColor(Color.BLACK);
-		configuration.setWindowPosition(2200, 100);
+		configuration.setWindowPosition(200, 100);
 		configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
 
 		// create game

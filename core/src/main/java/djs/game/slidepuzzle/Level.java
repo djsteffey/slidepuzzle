@@ -5,9 +5,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,6 +15,11 @@ import java.util.Queue;
 import java.util.Random;
 
 public class Level extends Group {
+    // listener
+    public interface ILevelListener{
+        void on_complete(Level level);
+    }
+
     // tag
     private static final String TAG = Level.class.getSimpleName();
 
@@ -24,22 +29,30 @@ public class Level extends Group {
     };
 
     // variables
+    private ILevelListener m_listener;
     private int m_block_size;
     private int m_field_width;
     private int m_field_height;
     private ETile[][] m_field;
     private TextureRegion m_block_texture_region;
     private Hero m_hero;
+    private boolean m_is_moving;
+    private boolean m_is_over;
+    private int m_num_moves;
+    private int m_level_num;
 
     // methods
-    public Level(int seed, int block_size){
-        Gdx.app.log(TAG, "Level(" + seed + ", " + block_size + ")");
+    public Level(ILevelListener listener, int level_num){
+        Gdx.app.log(TAG, "Level(" + level_num + ")");
 
         // values
-        this.m_block_size = block_size;
+        this.m_listener = listener;
 
         // generate the level
-        this.generate2(new Random(seed));
+        this.m_level_num = level_num;
+        Random rand = new Random(this.m_level_num);
+        this.m_block_size = rand.nextInt(33) + 32;
+        this.generate(rand);
 
         // graphics
         this.m_block_texture_region = new TextureRegion(
@@ -48,6 +61,11 @@ public class Level extends Group {
 
         // size
         this.setSize(this.m_field_width * this.m_block_size, this.m_field_height * this.m_block_size);
+
+        // other
+        this.m_is_over = false;
+        this.m_is_moving = false;
+        this.m_num_moves = 0;
     }
 
     @Override
@@ -96,6 +114,14 @@ public class Level extends Group {
     }
 
     public void fling_direction(int dx, int dy){
+        // checks
+        if (this.m_is_over){
+            return;
+        }
+        if (this.m_is_moving){
+            return;
+        }
+
         // initial target is the current hero position
         int tx = this.m_hero.get_tile_x();
         int ty = this.m_hero.get_tile_y();
@@ -125,6 +151,12 @@ public class Level extends Group {
             }
         }
 
+        // see if we actually moved
+        if (tx == this.m_hero.get_tile_x() && ty == this.m_hero.get_tile_y()){
+            // didnt actually move
+            return;
+        }
+
         // calculate the distance
         float distance = (float)Math.sqrt(
                 Math.pow((tx - this.m_hero.get_tile_x()) * 48, 2) + Math.pow((ty - this.m_hero.get_tile_y()) * 48, 2)
@@ -133,158 +165,42 @@ public class Level extends Group {
         // set the position of the hero
         this.m_hero.set_tile_position(tx, ty);
 
+        // flag as moving
+        this.m_is_moving = true;
+        this.m_num_moves += 1;
+
         // animate
-        this.m_hero.addAction(Actions.moveTo(
-                this.m_hero.get_tile_x() * 48,
-                this.m_hero.get_tile_y() * 48,
-                distance / (48.0f * 32)
+        this.m_hero.addAction(
+                Actions.sequence(
+                        Actions.moveTo(
+                                this.m_hero.get_tile_x() * this.m_block_size,
+                                this.m_hero.get_tile_y() * this.m_block_size,
+                                distance / (this.m_block_size * 32.0f)
+                        ),
+                        new Action() {
+                            @Override
+                            public boolean act(float delta) {
+                                Level.this.m_is_moving = false;
+                                if (Level.this.m_field[Level.this.m_hero.get_tile_x()][Level.this.m_hero.get_tile_y()] == ETile.GOAL){
+                                    Level.this.m_is_over = true;
+                                    Level.this.m_listener.on_complete(Level.this);
+                                }
+                                return true;
+                            }
+                        }
                 )
         );
     }
 
-    private void generate(Random rand){
-        // generate the size
-        this.m_field_width = (int)((720 * 0.85f) / this.m_block_size);
-        this.m_field_height = (int)((1280 * 0.85f) / this.m_block_size);
-        this.m_field = new ETile[this.m_field_width][this.m_field_height];
-
-        // make the hero and place on the board
-        this.m_hero = new Hero(
-                rand.nextInt(this.m_field_width),
-                rand.nextInt(this.m_field_height),
-                this.m_block_size
-        );
-        this.addActor(this.m_hero);
-
-        // init each block
-        for (int y = 0; y < this.m_field_height; ++y){
-            for (int x = 0; x < this.m_field_width; ++x){
-                int r = rand.nextInt(100);
-                if (r < 98){
-                    this.m_field[x][y] = ETile.EMPTY;
-                }
-                else{
-                    this.m_field[x][y] = ETile.BLOCKED;
-                }
-            }
-        }
-        this.m_field[this.m_hero.get_tile_x()][this.m_hero.get_tile_y()] = ETile.EMPTY;
-
-        // now run some hero simulated moves to find the exit
-        int hx = this.m_hero.get_tile_x();
-        int hy = this.m_hero.get_tile_y();
-        int last_dx = 0;
-        int last_dy = 0;
-        int num_moves = 5; //rand.nextInt(5) + 5;
-
-        // loop while moves left
-        while (num_moves > 0){
-            // find a direction to move
-            int dx = 0;
-            int dy = 0;
-            for (int tries = 0; tries < 100; ++tries) {
-                switch (rand.nextInt(4)) {
-                    case 0: {
-                        dx = -1;
-                        dy = 0;
-                    }
-                    break;  // left
-                    case 1: {
-                        dx = 1;
-                        dy = 0;
-                    }
-                    break;  // right
-                    case 2: {
-                        dx = 0;
-                        dy = 1;
-                    }
-                    break;  // up
-                    case 3: {
-                        dx = 0;
-                        dy = -1;
-                    }
-                    break;  // down
-                }
-
-                // make sure not same direction we just went
-                if (dx == last_dx && dy == last_dy) {
-                    // same direction so ignore
-                    continue;
-                }
-
-                // make sure not where we just came from
-                if (dx == -last_dx || dy == -last_dy) {
-                    // same direction we just came from
-                    continue;
-                }
-
-                // make sure the direction is valid on the field
-                if (this.is_valid_tile_position(hx + dx, hy + dy) == false){
-                    // not valid
-                    continue;
-                }
-
-                // make sure not blocked
-                if (this.m_field[hx + dx][hy + dy] == ETile.BLOCKED){
-                    // cant go that direction
-                    continue;
-                }
-
-                // get here then can go dx, dy direction
-                break;
-            }
-
-            // make sure we actually got a direction and not just 0, 0
-            if (dx == 0 && dy == 0){
-                // cant move from this spot so try generate all over again
-                this.generate(rand);
-                return;
-            }
-
-            // so we can move dx, dy and save it as last
-            last_dx = dx;
-            last_dy = dy;
-
-            // our target distance we want to move
-            int target_distance = rand.nextInt(6) + 6;
-            int current_distance = 0;
-
-            // keep moving dx, dy until we cant
-            while (true){
-                // check if we can move
-                if (this.is_valid_tile_position(hx + dx, hy + dy) == false){
-                    // cant move that direction any more
-                    break;
-                }
-                if (this.m_field[hx + dx][hy + dy] == ETile.BLOCKED){
-                    // cant move that direction any more
-                    break;
-                }
-
-                // move that direction
-                hx += dx;
-                hy += dy;
-
-                // increment distance
-                current_distance += 1;
-                if (current_distance == target_distance){
-                    // make the next one a block
-                    if (this.is_valid_tile_position(hx + dx, hy + dy)){
-                        this.m_field[hx + dx][hy + dy] = ETile.BLOCKED;
-                    }
-                }
-            }
-
-            // move complete
-            Gdx.app.log(TAG, dx + " " + dy);
-            num_moves -= 1;
-        }
-
-        // now the hx, hy is the destination
-        this.m_field[hx][hy] = ETile.GOAL;
+    public int get_num_moves(){
+        return this.m_num_moves;
     }
 
-    private void generate2(Random rand){
+    public int get_level_num(){
+        return this.m_level_num;
+    }
+
+    private void generate(Random rand){
         // generate the size
         this.m_field_width = (int)((720 * 0.85f) / this.m_block_size);
         this.m_field_height = (int)((1280 * 0.85f) / this.m_block_size);
@@ -323,7 +239,7 @@ public class Level extends Group {
             // check if queue empty
             if (queue.isEmpty()){
                 // empty queue and didnt find goal....so try again
-                this.generate2(rand);
+                this.generate(rand);
                 return;
             }
 

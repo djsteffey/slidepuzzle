@@ -4,6 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 
@@ -40,6 +41,7 @@ public class SlideGame extends Game implements IGameServices {
 
 		// set default fonts to size 24 of this ttf
 		this.m_ui_skin.get(TextButton.TextButtonStyle.class).font = this.m_ui_skin.getFont("font-32");
+		this.m_ui_skin.get(Label.LabelStyle.class).font = this.m_ui_skin.getFont("font-48");
 
 		// setup the screen
 		this.set_next_screen(new ScreenMain(this));
