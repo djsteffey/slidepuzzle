@@ -1,7 +1,6 @@
 package djs.game.slidepuzzle;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -24,7 +23,7 @@ public class LevelCompleteDialog extends Group {
     private ILevelCompleteDialogListener m_listener;
 
     // methods
-    public LevelCompleteDialog(ILevelCompleteDialogListener listener, Skin skin, int level_num, int num_moves){
+    public LevelCompleteDialog(ILevelCompleteDialogListener listener, Skin skin, int num_moves){
         // listener
         this.m_listener = listener;
 
@@ -40,7 +39,7 @@ public class LevelCompleteDialog extends Group {
         this.addActor(image);
 
         // moves and level
-        Label label = new Label("Level: " + level_num + "\nMoves: " + num_moves, skin);
+        Label label = new Label("Moves: " + num_moves, skin);
         label.setPosition(this.getWidth() / 2, this.getHeight() - label.getHeight() / 2 - 8, Align.center);
         label.setAlignment(Align.center);
         this.addActor(label);

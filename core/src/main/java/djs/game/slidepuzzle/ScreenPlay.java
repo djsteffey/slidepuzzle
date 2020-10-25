@@ -23,13 +23,13 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
     private TextButton m_button_quit;
 
     // methods
-    public ScreenPlay(IGameServices game_services, int level_number) {
+    public ScreenPlay(IGameServices game_services, int seed, Level.ELevelDifficulty difficulty) {
         super(game_services);
 
         Gdx.app.log(TAG, "ScreenPlay()");
 
         // create the level
-        this.generate_level(level_number);
+        this.generate_level(seed, difficulty);
 
         // reset button
         this.m_button_reset = new TextButton("Reset", this.m_game_services.get_ui_skin());
@@ -38,7 +38,7 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
         this.m_button_reset.addListener(new ClickListener(){
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_level_num());
+                ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_seed(), ScreenPlay.this.m_level.get_difficulty());
             }
         });
         this.m_stage.addActor(this.m_button_reset);
@@ -50,7 +50,7 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
         this.m_button_next.addListener(new ClickListener(){
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_level_num() + 1);
+                ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_seed() + 1, ScreenPlay.this.m_level.get_difficulty());
             }
         });
         this.m_stage.addActor(this.m_button_next);
@@ -94,7 +94,7 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
         Gdx.input.setInputProcessor(im);
     }
 
-    private void generate_level(int level_num){
+    private void generate_level(int seed, Level.ELevelDifficulty difficulty){
         // remove existing
         if (this.m_level != null){
             this.m_level.remove();
@@ -116,7 +116,7 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
                                 new LevelCompleteDialog.ILevelCompleteDialogListener() {
                                     @Override
                                     public void on_retry(LevelCompleteDialog dlg) {
-                                        ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_level_num());
+                                        ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_seed(), ScreenPlay.this.m_level.get_difficulty());
                                         dlg.remove();
                                         ScreenPlay.this.m_button_reset.setTouchable(Touchable.enabled);
                                         ScreenPlay.this.m_button_reset.setDisabled(false);
@@ -128,7 +128,7 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
 
                                     @Override
                                     public void on_next(LevelCompleteDialog dlg) {
-                                        ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_level_num() + 1);
+                                        ScreenPlay.this.generate_level(ScreenPlay.this.m_level.get_seed() + 1, ScreenPlay.this.m_level.get_difficulty());
                                         dlg.remove();
                                         ScreenPlay.this.m_button_reset.setTouchable(Touchable.enabled);
                                         ScreenPlay.this.m_button_reset.setDisabled(false);
@@ -144,14 +144,14 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
                                     }
                                 },
                                 ScreenPlay.this.m_game_services.get_ui_skin(),
-                                ScreenPlay.this.m_level.get_level_num(),
                                 ScreenPlay.this.m_level.get_num_moves()
                         );
                         dlg.setPosition(720 / 2.0f, 1280 / 2.0f, Align.center);
                         ScreenPlay.this.m_stage.addActor(dlg);
                     }
                 },
-                level_num
+                seed,
+                difficulty
         );
         this.m_level.setPosition(720.0f / 2, 1280.0f / 2, Align.center);
         this.m_stage.addActor(this.m_level);

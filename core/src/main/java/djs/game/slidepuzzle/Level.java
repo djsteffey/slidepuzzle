@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
+import com.badlogic.gdx.graphics.g2d.ParticleEmitter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Group;
@@ -20,13 +22,18 @@ public class Level extends Group {
         void on_complete(Level level);
     }
 
-    // tag
-    private static final String TAG = Level.class.getSimpleName();
-
     // enum
+    public enum ELevelDifficulty{
+        EASY,
+        MEDIUM,
+        HARD
+    }
     private enum ETile{
         EMPTY, BLOCKED, GOAL
     };
+
+    // tag
+    private static final String TAG = Level.class.getSimpleName();
 
     // variables
     private ILevelListener m_listener;
@@ -39,33 +46,47 @@ public class Level extends Group {
     private boolean m_is_moving;
     private boolean m_is_over;
     private int m_num_moves;
-    private int m_level_num;
+    private int m_seed;
+    private ELevelDifficulty m_difficulty;
+    private ParticleEffect m_pe;
 
     // methods
-    public Level(ILevelListener listener, int level_num){
-        Gdx.app.log(TAG, "Level(" + level_num + ")");
+    public Level(ILevelListener listener, int seed, ELevelDifficulty difficulty){
+        Gdx.app.log(TAG, "Level(" + seed + ", " + difficulty + ")");
 
-        // values
+        // save values
         this.m_listener = listener;
+        this.m_seed = seed;
+        this.m_difficulty = difficulty;
+
+        // setup block size based on difficulty
+        switch (this.m_difficulty){
+            case EASY: { this.m_block_size = 48; } break;
+            case MEDIUM: { this.m_block_size = 32; } break;
+            case HARD: { this.m_block_size = 16; } break;
+            default: { this.m_block_size = 96; } break;
+        }
 
         // generate the level
-        this.m_level_num = level_num;
-        Random rand = new Random(this.m_level_num);
-        this.m_block_size = rand.nextInt(33) + 32;
+        Random rand = new Random(this.m_seed);
         this.generate(rand);
 
-        // graphics
+        // graphics for blocks
         this.m_block_texture_region = new TextureRegion(
                 new Texture(Gdx.files.internal("block.png"))
         );
 
-        // size
+        // size of the level group object
         this.setSize(this.m_field_width * this.m_block_size, this.m_field_height * this.m_block_size);
 
         // other
         this.m_is_over = false;
         this.m_is_moving = false;
         this.m_num_moves = 0;
+
+        this.m_pe = new ParticleEffect();
+        this.m_pe.load(Gdx.files.internal("particles/test"), Gdx.files.internal(""));
+        this.m_pe.start();
     }
 
     @Override
@@ -90,7 +111,16 @@ public class Level extends Group {
         }
         batch.setColor(Color.WHITE);
 
+        this.m_pe.getEmitters().first().setPosition(this.m_hero.getX() + this.m_hero.getWidth() / 2.0f + this.getX(), this.m_hero.getY() + this.m_hero.getHeight() / 2.0f + this.getY());
+        this.m_pe.update(Gdx.graphics.getDeltaTime());
+        this.m_pe.draw(batch);
+        if (this.m_pe.isComplete()){
+            this.m_pe.reset();
+        }
+
         super.draw(batch, parentAlpha);
+
+
     }
 
     private boolean is_valid_tile_position(int tile_x, int tile_y){
@@ -159,7 +189,7 @@ public class Level extends Group {
 
         // calculate the distance
         float distance = (float)Math.sqrt(
-                Math.pow((tx - this.m_hero.get_tile_x()) * 48, 2) + Math.pow((ty - this.m_hero.get_tile_y()) * 48, 2)
+                Math.pow((tx - this.m_hero.get_tile_x()) * this.m_block_size, 2) + Math.pow((ty - this.m_hero.get_tile_y()) * this.m_block_size, 2)
         );
 
         // set the position of the hero
@@ -170,12 +200,13 @@ public class Level extends Group {
         this.m_num_moves += 1;
 
         // animate
+        float duration = distance / (1088.0f * 1.25f);
         this.m_hero.addAction(
                 Actions.sequence(
                         Actions.moveTo(
                                 this.m_hero.get_tile_x() * this.m_block_size,
                                 this.m_hero.get_tile_y() * this.m_block_size,
-                                distance / (this.m_block_size * 32.0f)
+                                duration
                         ),
                         new Action() {
                             @Override
@@ -196,8 +227,12 @@ public class Level extends Group {
         return this.m_num_moves;
     }
 
-    public int get_level_num(){
-        return this.m_level_num;
+    public int get_seed(){
+        return this.m_seed;
+    }
+
+    public ELevelDifficulty get_difficulty(){
+        return this.m_difficulty;
     }
 
     private void generate(Random rand){

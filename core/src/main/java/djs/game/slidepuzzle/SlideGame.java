@@ -8,6 +8,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 
+
+
 public class SlideGame extends Game implements IGameServices {
 	// tag
 	private static final String TAG = SlideGame.class.getSimpleName();

@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-
 import java.util.Random;
 
 public class ScreenMain extends ScreenAbstract{
@@ -24,9 +23,8 @@ public class ScreenMain extends ScreenAbstract{
 			@Override
 			public void clicked(InputEvent event, float x, float y) {
 				ScreenMain.this.m_game_services.set_next_screen(
-						new ScreenPlay(
-								ScreenMain.this.m_game_services,
-								Math.abs(new Random().nextInt())
+						new ScreenDifficulty(
+								ScreenMain.this.m_game_services
 						)
 				);
 			}
