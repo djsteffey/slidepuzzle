@@ -4,10 +4,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
-
 import java.util.Random;
 
 public class ScreenDifficulty extends ScreenAbstract{
@@ -15,7 +15,7 @@ public class ScreenDifficulty extends ScreenAbstract{
     private static final String TAG = ScreenDifficulty.class.getSimpleName();
 
     // variables
-    private Group m_buttons_group;
+
 
     // methods
     public ScreenDifficulty(IGameServices game_services) {
@@ -24,15 +24,12 @@ public class ScreenDifficulty extends ScreenAbstract{
         Gdx.app.log(TAG, "ScreenDifficulty()");
 
         // button size
-        int button_width = 256;
-        int button_height = 128;
-        int button_separation = 8;
+        float button_width = 256.0f;
+        float button_height = button_width * Constants.GOLDEN_RATIO;
 
-        // buttons
-        this.m_buttons_group = new Group();
-        this.m_buttons_group.setSize(button_width,(4 * button_height) + (3 * button_separation));
-        this.m_buttons_group.setPosition(720 / 2, 1280 / 2, Align.center);
-        this.m_stage.addActor(this.m_buttons_group);
+        // table for the buttons
+        Table table = new Table();
+        table.defaults().pad(4.0f);
 
         // easy
         TextButton tb = new TextButton("Easy", this.m_game_services.get_ui_skin());
@@ -40,15 +37,11 @@ public class ScreenDifficulty extends ScreenAbstract{
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 ScreenDifficulty.this.m_game_services.set_next_screen(
-                        new ScreenPlay(
-                                ScreenDifficulty.this.m_game_services,
-                                Math.abs(new Random().nextInt()),
-                                Level.ELevelDifficulty.EASY
-                        )
+                        new ScreenLevelSelect(ScreenDifficulty.this.m_game_services, Constants.EDifficulty.EASY)
                 );
             }
         });
-        this.m_buttons_group.addActor(tb);
+        table.add(tb).size(button_width, button_height);
 
         // medium
         tb = new TextButton("Medium", this.m_game_services.get_ui_skin());
@@ -56,15 +49,25 @@ public class ScreenDifficulty extends ScreenAbstract{
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 ScreenDifficulty.this.m_game_services.set_next_screen(
-                        new ScreenPlay(
-                                ScreenDifficulty.this.m_game_services,
-                                Math.abs(new Random().nextInt()),
-                                Level.ELevelDifficulty.MEDIUM
-                        )
+                        new ScreenLevelSelect(ScreenDifficulty.this.m_game_services, Constants.EDifficulty.MEDIUM)
                 );
             }
         });
-        this.m_buttons_group.addActor(tb);
+        table.row();
+        table.add(tb).size(button_width, button_height);
+
+        // extra medium
+        tb = new TextButton("Extra Medium", this.m_game_services.get_ui_skin());
+        tb.addListener(new ClickListener(){
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                ScreenDifficulty.this.m_game_services.set_next_screen(
+                        new ScreenLevelSelect(ScreenDifficulty.this.m_game_services, Constants.EDifficulty.EXTRA_MEDIUM)
+                );
+            }
+        });
+        table.row();
+        table.add(tb).size(button_width, button_height);
 
         // hard
         tb = new TextButton("Hard", this.m_game_services.get_ui_skin());
@@ -72,15 +75,12 @@ public class ScreenDifficulty extends ScreenAbstract{
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 ScreenDifficulty.this.m_game_services.set_next_screen(
-                        new ScreenPlay(
-                                ScreenDifficulty.this.m_game_services,
-                                Math.abs(new Random().nextInt()),
-                                Level.ELevelDifficulty.HARD
-                        )
+                        new ScreenLevelSelect(ScreenDifficulty.this.m_game_services, Constants.EDifficulty.HARD)
                 );
             }
         });
-        this.m_buttons_group.addActor(tb);
+        table.row();
+        table.add(tb).size(button_width, button_height);
 
         // back
         tb = new TextButton("Back", this.m_game_services.get_ui_skin());
@@ -92,13 +92,13 @@ public class ScreenDifficulty extends ScreenAbstract{
                 );
             }
         });
-        this.m_buttons_group.addActor(tb);
+        table.row();
+        table.add(tb).size(button_width, button_height);
 
-        // set their sizes
-        for (int i = 0; i < this.m_buttons_group.getChildren().size; ++i){
-            Actor a = this.m_buttons_group.getChild(i);
-            a.setSize(button_width, button_height);
-            a.setPosition(0, this.m_buttons_group.getHeight() - ((i + 1) * button_height) - (i * button_separation));
-        }
+        // position table
+        table.setPosition(Constants.SCREEN_WIDTH / 2.0f, Constants.SCREEN_HEIGHT / 2.0f, Align.center);
+
+        // add table
+        this.m_stage.addActor(table);
     }
 }

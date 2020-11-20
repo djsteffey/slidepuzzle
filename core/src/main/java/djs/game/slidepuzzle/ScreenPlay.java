@@ -68,8 +68,8 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
         this.m_stage.addActor(this.m_button_quit);
 
         // num moves
-        this.m_num_moves_label = new Label("Moves: 0", this.m_game_services.get_ui_skin());
-        this.m_num_moves_label.setSize(256, 64);
+        this.m_num_moves_label = new Label("Moves: 0\nOptimal: " + this.m_level.get_optimal_moves_count(), this.m_game_services.get_ui_skin());
+        this.m_num_moves_label.setSize(256, 128);
         this.m_num_moves_label.setAlignment(Align.center);
         this.m_num_moves_label.setPosition(720 / 2.0f, 1280 - this.m_num_moves_label.getHeight() / 2 - 8, Align.center);
         this.m_stage.addActor(this.m_num_moves_label);
@@ -80,7 +80,7 @@ public class ScreenPlay extends ScreenAbstract implements GestureDetector.Gestur
 
     @Override
     public void render(float delta) {
-        this.m_num_moves_label.setText("Moves: " + this.m_level.get_num_moves());
+        this.m_num_moves_label.setText("Moves: " + this.m_level.get_num_moves() + "\nOptimal: " + this.m_level.get_optimal_moves_count());
         super.render(delta);
     }
 

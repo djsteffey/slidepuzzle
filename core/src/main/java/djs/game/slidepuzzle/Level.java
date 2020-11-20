@@ -5,15 +5,12 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
-import com.badlogic.gdx.graphics.g2d.ParticleEmitter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Random;
 
 public class Level extends Group {
@@ -49,6 +46,8 @@ public class Level extends Group {
     private int m_seed;
     private ELevelDifficulty m_difficulty;
     private ParticleEffect m_pe;
+    private List<GridPoint2> m_optimal_path;
+
 
     // methods
     public Level(ILevelListener listener, int seed, ELevelDifficulty difficulty){
@@ -119,8 +118,6 @@ public class Level extends Group {
         }
 
         super.draw(batch, parentAlpha);
-
-
     }
 
     private boolean is_valid_tile_position(int tile_x, int tile_y){
@@ -239,14 +236,16 @@ public class Level extends Group {
         // generate the size
         this.m_field_width = (int)((720 * 0.85f) / this.m_block_size);
         this.m_field_height = (int)((1280 * 0.85f) / this.m_block_size);
+
+        // generate the field
         this.m_field = new ETile[this.m_field_width][this.m_field_height];
 
         // rand start position on bottom
-        int sx = rand.nextInt(this.m_field_width);
+        int sx = rand.nextInt(this.m_field_width - 2) + 1;
         int sy = 0;
 
         // rand end position on top
-        int ex = rand.nextInt(this.m_field_width);
+        int ex = rand.nextInt(this.m_field_width - 2) + 1;
         int ey = rand.nextInt(this.m_field_height / 2) + this.m_field_height / 2;//this.m_field_height - 1;
 
         // fill the field
@@ -266,70 +265,44 @@ public class Level extends Group {
         this.m_field[ex][ey] = ETile.GOAL;
 
         // bfs solver
-        Queue<TilePosition> queue = new LinkedList<>();
-        queue.add(new TilePosition(sx, sy));
-        boolean[][] visited = new boolean[this.m_field_width][this.m_field_height];
-        visited[sx][sy] = true;
-        while (true){
-            // check if queue empty
-            if (queue.isEmpty()){
-                // empty queue and didnt find goal....so try again
-                this.generate(rand);
-                return;
-            }
-
-            // get the head item which is the position to move from
-            TilePosition position = queue.poll();
-
-            // check if it is the goal
-            if (this.m_field[position.get_x()][position.get_y()] == ETile.GOAL){
-                // all done
-                break;
-            }
-
-            // go through the 4 directions
-            List<TilePosition> directions = new ArrayList<TilePosition>(){{
-                add(new TilePosition(1, 0)); add(new TilePosition(-1, 0)); add(new TilePosition(0, -1)); add(new TilePosition(0, 1));
-            }};
-            for (TilePosition dir : directions){
-                // move in that direction until we cant
-                int cx = position.get_x();
-                int cy = position.get_y();
-                while (true){
-                    if (this.is_valid_tile_position(cx + dir.get_x(), cy + dir.get_y()) == false){
-                        // cant move there so cx, cy is as far as we can go
-                        break;
-                    }
-                    if (this.m_field[cx + dir.get_x()][cy + dir.get_y()] == ETile.BLOCKED){
-                        // cant move there so cx, cy is as far as we can go
-                        break;
-                    }
-                    if (this.m_field[cx + dir.get_x()][cy + dir.get_y()] == ETile.GOAL){
-                        // we can move on it and we are done
-                        cx += dir.get_x();
-                        cy += dir.get_y();
-                        break;
-                    }
-
-                    // none of the above so move
-                    cx += dir.get_x();
-                    cy += dir.get_y();
+        GridBreadthFirstSearch bfs = new GridBreadthFirstSearch();
+        List<GridPoint2> path = bfs.solve(this.m_field_width, this.m_field_height, new GridPoint2(sx, sy), new GridPoint2(ex, ey), new GridBreadthFirstSearch.ICallback() {
+            @Override
+            public boolean can_move_to(int x, int y) {
+                if (Level.this.is_valid_tile_position(x, y) == false){
+                    return false;
                 }
-
-                // check if was already visited
-                if (visited[cx][cy] == false){
-                    visited[cx][cy] = true;
-                    queue.add(new TilePosition(cx, cy));
+                else if (Level.this.get_field_value(x, y) == ETile.BLOCKED){
+                    return false;
                 }
+                return true;
             }
+        });
+
+        // check if we got a path
+        if (path == null){
+            // couldn't make a path
+            this.generate(rand);
+            return;
         }
 
-        // make hero
+        // we got a path; save the path
+        this.m_optimal_path = path;
+        Gdx.app.log(TAG, this.m_optimal_path.toString());
+
+        // make the hero
         this.m_hero = new Hero(
                 sx,
                 sy,
                 this.m_block_size
         );
         this.addActor(this.m_hero);
+    }
+
+    public int get_optimal_moves_count(){
+        if (this.m_optimal_path == null){
+            return -1;
+        }
+        return this.m_optimal_path.size() - 1;
     }
 }

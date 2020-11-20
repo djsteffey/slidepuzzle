@@ -2,23 +2,26 @@ package djs.game.slidepuzzle;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import java.util.Random;
+import com.badlogic.gdx.utils.Align;
 
 public class ScreenMain extends ScreenAbstract{
-	// tag
-	private static final String TAG = ScreenMain.class.getSimpleName();
-
 	// methods
 	public ScreenMain(IGameServices game_services) {
 		super(game_services);
 
-		Gdx.app.log(TAG, "ScreenMain()");
+		// button size
+		float button_width = 256.0f;
+		float button_height = button_width * Constants.GOLDEN_RATIO;
 
+		// table to hold the buttons
+		Table table = new Table();
+		table.defaults().pad(4.0f);
+
+		// play button
 		TextButton tb = new TextButton("Play", this.m_game_services.get_ui_skin());
-		tb.setSize(256, 128);
-		tb.setPosition((720 - tb.getWidth()) / 2, (1280 - tb.getHeight()) / 2);
 		tb.addListener(new ClickListener(){
 			@Override
 			public void clicked(InputEvent event, float x, float y) {
@@ -29,17 +32,23 @@ public class ScreenMain extends ScreenAbstract{
 				);
 			}
 		});
-		this.m_stage.addActor(tb);
+		table.add(tb).size(button_width, button_height);
 
+		// quit button
 		tb = new TextButton("Quit", this.m_game_services.get_ui_skin());
-		tb.setSize(256, 128);
-		tb.setPosition((720 - tb.getWidth()) / 2, (1280 - tb.getHeight()) / 2 - tb.getHeight() - 8);
 		tb.addListener(new ClickListener(){
 			@Override
 			public void clicked(InputEvent event, float x, float y) {
 				Gdx.app.exit();
 			}
 		});
-		this.m_stage.addActor(tb);
+		table.row();
+		table.add(tb).size(button_width, button_height);
+
+		// position table in center
+		table.setPosition(Constants.SCREEN_WIDTH / 2.0f, Constants.SCREEN_HEIGHT / 2.0f, Align.center);
+
+		// add it
+		this.m_stage.addActor(table);
 	}
 }
